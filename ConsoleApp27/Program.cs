@@ -14,161 +14,187 @@ namespace ServiceCenter
 
             while (running)
             {
-                Console.WriteLine("=== Автосервіс ===");
-                Console.WriteLine("1 - довідка про програму");
-                Console.WriteLine("2 - таблиця вартості ремонту (табулювання)");
-                Console.WriteLine("3 - звіт завантаження майстрів (таблиця на два входи)");
-                Console.WriteLine("0 - вихід");
-                Console.Write("Ваш вибір: ");
-
+                ShowMenu();
                 string choice = Console.ReadLine();
                 Console.WriteLine();
 
                 switch (choice)
                 {
-                    case "1":
-                        ShowAbout();
-                        Pause();
-                        break;
-
-                    case "2":
-                        ShowCostTable();
-                        Pause();
-                        break;
-
-                    case "3":
-                        ShowWorkloadTable();
-                        Pause();
-                        break;
-
-                    case "0":
-                        running = false;
-                        Console.WriteLine("Роботу завершено. До побачення!");
-                        break;
-
+                    case "1": ShowAbout(); Pause(); break;
+                    case "2": RunCostTable(); Pause(); break;
+                    case "3": RunWorkloadTable(); Pause(); break;
+                    case "0": running = false; break;
                     default:
-                        Console.WriteLine("Помилка: немає такого пункту меню. Спробуйте ще раз.");
+                        Console.WriteLine("Немає такого пункту. Спробуйте ще раз.");
                         Pause();
                         break;
                 }
             }
         }
 
+        // 1. Виведення головного меню
+        static void ShowMenu()
+        {
+            Console.Clear();
+            Console.WriteLine("=== Сервісний центр ===");
+            Console.WriteLine("1 — Про програму та сутність");
+            Console.WriteLine("2 — Таблиця вартості ремонту (табулювання)");
+            Console.WriteLine("3 — Завантаження майстрів за тиждень");
+            Console.WriteLine("0 — Вихід");
+            Console.Write("Ваш вибір: ");
+        }
+
+        // 2. Пауза перед поверненням у меню
         static void Pause()
         {
-            Console.WriteLine("\nНатисніть будь-яку клавішу для повернення в меню...");
-            Console.ReadKey(true);
-            Console.Clear();
+            Console.WriteLine();
+            Console.Write("Натисніть Enter, щоб повернутися в меню...");
+            Console.ReadLine();
         }
 
+        // 3. Інформація про тему, сутність та поля (Рівень А, п. 2)
         static void ShowAbout()
         {
-            Console.WriteLine("=== Довідка про застосунок ===");
-            Console.WriteLine("Тема проєкту: Автосервіс (облік заявок на ремонт автомобілів).");
-            Console.WriteLine("Головна сутність: Заявка на ремонт (Order).");
-            Console.WriteLine("Підсумкова величина: Загальна вартість виконаних ремонтів (грн).");
-            Console.WriteLine("\nПоля запису (7 полів):");
-            Console.WriteLine("1. Номер заявки (int) — призначається автоматично, > 0");
-            Console.WriteLine("2. Марка та модель авто (string) — непорожній рядок");
-            Console.WriteLine("3. Державний номер (string) — формат АА0000АА, непорожній");
-            Console.WriteLine("4. Категорія робіт (string) — Двигун, Ходова, Електрика, Кузов");
-            Console.WriteLine("5. Прізвище майстра (string) — непорожній рядок");
-            Console.WriteLine("6. Витрачено нормо-годин (double) — від 0.5 до 100.0");
-            Console.WriteLine("7. Вартість ремонту, грн (double) — > 0");
+            Console.WriteLine("=== Про програму ===");
+            Console.WriteLine("Тема проєкту: Автоматизація обліку сервісного центру");
+            Console.WriteLine("Основна сутність: Замовлення на ремонт (RepairOrder)");
+            Console.WriteLine("Поля сутності та їхні типи:");
+            Console.WriteLine(" - orderId (int) — унікальний номер замовлення;");
+            Console.WriteLine(" - deviceName (string) — назва або модель пристрою;");
+            Console.WriteLine(" - workHours (double) — витрачений час майстра (у годинах);");
+            Console.WriteLine(" - hourlyRate (double) — вартість години роботи майстра (грн);");
+            Console.WriteLine(" - partsCost (double) — вартість використаних запчастин (грн);");
+            Console.WriteLine(" - isCompleted (bool) — статус виконання замовлення.");
         }
 
-        static void ShowCostTable()
+        // 4. Обчислення вартості ремонту без виведення (Рівень А, п. 3)
+        static double CalculateRepairCost(double hours, double rate, double parts)
         {
-            Console.WriteLine("=== Розрахунок вартості ремонту залежно від тривалості ===");
-            Console.WriteLine("Формула: Вартість = 400 (діагностика) + 650 * години + 50 * години^1.2\n");
-
-            double from = 0.5;
-            double to = 5.0;
-            double step = 0.5;
-
-            if (step <= 0 || from > to)
-            {
-                Console.WriteLine("Помилка: некоректні межі або крок табулювання.");
-                return;
-            }
-
-            Console.WriteLine($"{"Нормо-год",12} | {"Вартість (грн)",16}");
-            Console.WriteLine(new string('-', 31));
-
-            for (double hours = from; hours <= to + 1e-9; hours += step)
-            {
-                double cost = 400.0 + 650.0 * hours + 50.0 * Math.Pow(hours, 1.2);
-                Console.WriteLine($"{hours,12:F2} | {cost,16:F2}");
-            }
+            return hours * rate + parts;
         }
 
-        static void ShowWorkloadTable()
+        // 5. Зчитування дробового числа з перевіркою меж (Рівень Б)
+        static double ReadDouble(string prompt, double min, double max)
         {
-            Console.WriteLine("=== Звіт: кількість виконаних заявок за майстрами та днями ===");
-
-            Console.Write("Введіть кількість майстрів (рядків, від 1 до 15): ");
-            if (!int.TryParse(Console.ReadLine(), out int rows) || rows <= 0 || rows > 15)
+            while (true)
             {
-                Console.WriteLine("Помилка: кількість рядків має бути цілим числом від 1 до 15.");
-                return;
-            }
+                Console.Write(prompt);
+                string input = Console.ReadLine();
 
-            Console.Write("Введіть кількість робочих днів (стовпців, від 1 до 7): ");
-            if (!int.TryParse(Console.ReadLine(), out int cols) || cols <= 0 || cols > 7)
-            {
-                Console.WriteLine("Помилка: кількість стовпців має бути цілим числом від 1 до 7.");
-                return;
-            }
-
-            Console.WriteLine();
-
-            int[] colTotals = new int[cols];
-            int grandTotal = 0;
-
-            Console.Write($"{"Майстер \\ День",-15}");
-            for (int col = 1; col <= cols; col++)
-            {
-                Console.Write($"{"День " + col,9}");
-            }
-            Console.WriteLine($"{"Разом",10}");
-
-            Console.WriteLine(new string('-', 15 + cols * 9 + 10));
-
-            for (int row = 1; row <= rows; row++)
-            {
-                int rowSum = 0;
-                Console.Write($"{"Майстер #" + row,-15}");
-
-                for (int col = 1; col <= cols; col++)
+                if (!double.TryParse(input, out double value))
                 {
-                    int ordersCount = (row * 2 + col) % 5 + 1;
-
-                    Console.Write($"{ordersCount,9}");
-
-                    rowSum += ordersCount;
-                    colTotals[col - 1] += ordersCount;
+                    Console.WriteLine("Помилка: введено не число. Спробуйте ще раз.");
+                    continue;
                 }
 
-                grandTotal += rowSum;
-                Console.WriteLine($"{rowSum,10}");
+                if (value < min || value > max)
+                {
+                    Console.WriteLine($"Помилка: число має бути в межах від {min} до {max}.");
+                    continue;
+                }
+
+                return value;
             }
+        }
 
-            Console.WriteLine(new string('-', 15 + cols * 9 + 10));
-            Console.Write($"{"Всього за день",-15}");
-
-            for (int col = 0; col < cols; col++)
+        // 6. Зчитування цілого числа з перевіркою меж (Рівень Б)
+        static int ReadInt(string prompt, int min, int max)
+        {
+            while (true)
             {
-                Console.Write($"{colTotals[col],9}");
+                Console.Write(prompt);
+                string input = Console.ReadLine();
+
+                if (!int.TryParse(input, out int value))
+                {
+                    Console.WriteLine("Помилка: введено не ціле число. Спробуйте ще раз.");
+                    continue;
+                }
+
+                if (value < min || value > max)
+                {
+                    Console.WriteLine($"Помилка: число має бути в межах від {min} до {max}.");
+                    continue;
+                }
+
+                return value;
+            }
+        }
+
+        // 7. Підготовка даних та запуск табулювання вартості
+        static void RunCostTable()
+        {
+            Console.WriteLine("=== Розрахунок вартості ремонту ===");
+            double rate = ReadDouble("Введіть ставку майстра за годину (100 - 2000 грн): ", 100, 2000);
+            double parts = ReadDouble("Введіть базову вартість запчастин (0 - 50000 грн): ", 0, 50000);
+            double startHours = ReadDouble("Початкова кількість годин (0.5 - 20): ", 0.5, 20);
+            double endHours = ReadDouble($"Кінцева кількість годин ({startHours} - 40): ", startHours, 40);
+            double step = ReadDouble("Крок зміни годин (0.5 - 5): ", 0.5, 5);
+
+            Console.WriteLine();
+            PrintCostTable(startHours, endHours, step, rate, parts);
+        }
+
+        // 8. Табулювання вартості ремонту за переданими параметрами (Рівень А, п. 4)
+        static void PrintCostTable(double start, double end, double step, double rate, double parts)
+        {
+            if (step <= 0 || start > end)
+            {
+                Console.WriteLine("Некоректні межі або крок табулювання.");
+                return;
             }
 
-            Console.WriteLine($"{grandTotal,10}");
+            Console.WriteLine("-----------------------------------------");
+            Console.WriteLine("| Години роботи | Загальна вартість, грн |");
+            Console.WriteLine("-----------------------------------------");
+
+            for (double h = start; h <= end + 0.0001; h += step)
+            {
+                double totalCost = CalculateRepairCost(h, rate, parts);
+                Console.WriteLine($"| {h,13:F1} | {totalCost,22:F2} |");
+            }
+
+            Console.WriteLine("-----------------------------------------");
+        }
+
+        // 9. Підготовка даних для таблиці завантаження
+        static void RunWorkloadTable()
+        {
+            Console.WriteLine("=== Завантаження майстрів за тиждень ===");
+            int mastersCount = ReadInt("Введіть кількість майстрів (1 - 10): ", 1, 10);
+            int daysCount = ReadInt("Введіть кількість робочих днів (1 - 7): ", 1, 7);
+
+            Console.WriteLine();
+            PrintWorkloadTable(mastersCount, daysCount);
+        }
+
+        // 10. Виведення таблиці завантаження майстрів
+        static void PrintWorkloadTable(int mastersCount, int daysCount)
+        {
+            if (mastersCount <= 0 || daysCount <= 0)
+            {
+                Console.WriteLine("Нема чого виводити.");
+                return;
+            }
+
+            Console.Write("Майстер \\ День |");
+            for (int d = 1; d <= daysCount; d++)
+            {
+                Console.Write($" День {d} |");
+            }
+            Console.WriteLine();
+
+            for (int m = 1; m <= mastersCount; m++)
+            {
+                Console.Write($"Майстер #{m,-5} |");
+                for (int d = 1; d <= daysCount; d++)
+                {
+                    int orders = (m * 2 + d) % 6 + 1;
+                    Console.Write($" {orders,4} зам|");
+                }
+                Console.WriteLine();
+            }
         }
     }
 }
 
-
-
-
-
-
- 
